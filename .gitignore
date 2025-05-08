@@ -1,0 +1,63 @@
+# Compiled source #
+###################
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Packages #
+############
+*.jar
+*.war
+*.ear
+
+# Logs and databases #
+######################
+*.log
+*.sql
+*.sqlite
+
+# OS generated files #
+######################
+.DS_Store
+Thumbs.db
+
+# IDEs and editors #
+####################
+.vscode/
+.idea/
+*.swp
+
+# Node.js #
+###########
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Python #
+##########
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+
+# Java #
+########
+*.class
+*.jar
+*.war
+*.ear
+
+# Misc #
+########
+*.tmp
+*.bak
+*.old
+*.orig
+*.rej
+*.sublime-workspace
+storage-data/*

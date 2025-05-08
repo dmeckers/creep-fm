@@ -1,0 +1,50 @@
+<icecast>
+    <location>Universe</location>
+    <admin>icecaster@localhost</admin>
+
+    <limits>
+        <clients>100</clients>
+        <sources>10</sources>
+        <workers>1</workers>
+        <queue-size>512</queue-size>
+        <burst-size>0</burst-size>
+    </limits>
+
+    <authentication>
+        <source-password>icecast_source_password</source-password>
+        <admin-user>icecaster</admin-user>
+        <admin-password>hackme</admin-password>
+    </authentication>
+
+    <hostname>cream.stream.io</hostname>
+
+    <listen-socket>
+        <port>8004</port>
+        <shoutcast-mount>/cream.mp3</shoutcast-mount>
+    </listen-socket>
+
+    <fileserve>1</fileserve>
+
+    <!-- <mount>
+        <mount-name>/cream.mp3</mount-name>
+        <stream-name>CREAM mp3</stream-name>
+        <stream-description>Cash rules everything around me C.R.E.A.M. get da money dolla dolla bill
+            yooo</stream-description>
+            <public>1</public>
+            </mount> -->
+
+    <mount>
+        <mount-name>/aliquid</mount-name>
+        <public>1</public>
+    </mount>
+
+    <logging>
+        <accesslog>access.log</accesslog>
+        <errorlog>error.log</errorlog>
+        <loglevel>3</loglevel>
+    </logging>
+
+    <security>
+        <chroot>0</chroot>
+    </security>
+</icecast>

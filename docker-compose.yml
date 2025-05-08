@@ -1,0 +1,264 @@
+services:
+  traefik:
+    image: traefik:alpine
+    container_name: traefik
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8088:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - $PWD/traefik.toml:/etc/traefik/traefik.toml:ro
+      - $PWD/certs:/etc/certs:ro
+    networks:
+      - internal
+      - traefik
+
+  nginx-front:
+    image: nginx:latest
+    container_name: nginx-front
+    expose:
+      - "80"
+    volumes:
+      - ./front/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - front
+    networks:
+      - internal
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - traefik.frontend.rule=Host:dev.creep-station.com
+      - "traefik.http.routers.nginx-front.rule=Host(`dev.creep-station.com`)"
+      - "traefik.http.routers.nginx-front.entrypoints=https"
+      - "traefik.http.routers.nginx-front.tls=true"
+      - "traefik.http.services.nginx-front.loadbalancer.server.port=80"
+      - "traefik.docker.network=traefik"
+
+  nginx-api:
+    image: nginx:latest
+    container_name: nginx-api
+    expose:
+      - "80"
+    volumes:
+      - ./api/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - api
+    networks:
+      - internal
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - traefik.frontend.rule=Host:api.dev.creep-station.com
+      - "traefik.http.routers.nginx-front.rule=Host(`api.dev.creep-station.com`)"
+      - "traefik.http.routers.nginx-front.entrypoints=https"
+      - "traefik.http.routers.nginx-front.tls=true"
+      - "traefik.http.services.nginx-front.loadbalancer.server.port=80"
+      - "traefik.docker.network=traefik"
+
+  front:
+    build:
+      context: ./front
+    container_name: front
+    ports:
+      - "5173:5173"
+    expose:
+      - "5173"
+    volumes:
+      - ./front:/app
+    networks:
+      - internal
+    depends_on:
+      - api
+    command: npm run dev
+
+  api:
+    build:
+      context: ./api
+      dockerfile: ./docker/Dockerfile
+    container_name: api
+    ports:
+      - "8000:8000"
+    expose:
+      - "8000"
+    volumes:
+      - ./api:/var/www/html
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./liq/configs:/var/liq/example # for liq config
+    networks:
+      - internal
+    depends_on:
+      - postgres-db
+      - redis
+      - storage
+    environment:
+      - DB_CONNECTION=${DB_CONNECTION}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SANCTUM_STATEFUL_DOMAINS=${SANCTUM_STATEFUL_DOMAINS}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_CLIENT=${REDIS_CLIENT}
+      - REDIS_HOST=${REDIS_HOST}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - QUEUE_CONNECTION=${QUEUE_CONNECTION}
+      - AWS_BUCKET=${AWS_BUCKET}
+      - AWS_ENDPOINT=${AWS_ENDPOINT}
+      - AWS_URL=${AWS_URL}
+      - AWS_USE_PATH_STYLE_ENDPOINT=${AWS_USE_PATH_STYLE_ENDPOINT}
+      - FILESYSTEM_PUBLIC_DRIVER=${FILESYSTEM_PUBLIC_DRIVER}
+      - FILESYSTEM_DISK=${FILESYSTEM_DISK}
+      - SERVER_NAME=${SERVER_NAME}
+      - OCTANE_SERVER=${OCTANE_SERVER}
+
+  # api-frankenphp:
+  #   build:
+  #     context: ./api
+  #     dockerfile: ./docker/Dockerfile
+  #   container_name: api
+  #   ports:
+  #     - "8000:8000"
+  #   expose:
+  #     - "8000"
+  #   volumes:
+  #     - ./api:/var/www/html
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #     - ./liq/configs:/var/liq/example # for liq config
+  #   networks:
+  #     - internal
+  #   depends_on:
+  #     - postgres-db
+  #     - redis
+  #     - storage
+  #   environment:
+  #     - DB_CONNECTION=${DB_CONNECTION}
+  #     - DB_HOST=${DB_HOST}
+  #     - DB_PORT=${DB_PORT}
+  #     - DB_DATABASE=${DB_DATABASE}
+  #     - DB_USERNAME=${DB_USERNAME}
+  #     - DB_PASSWORD=${DB_PASSWORD}
+  #     - SANCTUM_STATEFUL_DOMAINS=${SANCTUM_STATEFUL_DOMAINS}
+  #     - REDIS_PASSWORD=${REDIS_PASSWORD}
+  #     - REDIS_CLIENT=${REDIS_CLIENT}
+  #     - REDIS_HOST=${REDIS_HOST}
+  #     - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+  #     - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+  #     - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+  #     - QUEUE_CONNECTION=${QUEUE_CONNECTION}
+  #     - AWS_BUCKET=${AWS_BUCKET}
+  #     - AWS_ENDPOINT=${AWS_ENDPOINT}
+  #     - AWS_URL=${AWS_URL}
+  #     - AWS_USE_PATH_STYLE_ENDPOINT=${AWS_USE_PATH_STYLE_ENDPOINT}
+  #     - FILESYSTEM_PUBLIC_DRIVER=${FILESYSTEM_PUBLIC_DRIVER}
+  #     - FILESYSTEM_DISK=${FILESYSTEM_DISK}
+  #     - SERVER_NAME=${SERVER_NAME}
+  #     - OCTANE_SERVER=${OCTANE_SERVER}
+
+  postgres-db:
+    container_name: postgres-db
+    hostname: postgres-db
+    image: "postgres:17-alpine"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    networks:
+      - internal
+    ports:
+      - "5432:5432"
+
+  storage:
+    image: minio/minio
+    container_name: storage
+    hostname: storage
+    ports:
+      - "9001:9001"
+    environment:
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_REGION=${MINIO_REGION}
+    networks:
+      - internal
+    volumes:
+      - ./storage-data:/data
+    command: server --address :9001 /data
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - 6379:6379
+    networks:
+      - internal
+    user: redis
+
+  tg-bot:
+    container_name: tg-bot
+    hostname: tg-bot
+    ports:
+      - 3005:3000
+    volumes:
+      - ./tg:/app
+    # depends_on:
+    #   - api
+    build:
+      context: ./tg
+      dockerfile: ./docker/Dockerfile-dev
+    networks:
+      - internal
+
+  icecast:
+    container_name: icecast
+    hostname: icecast
+    build:
+      context: ./icecast
+      dockerfile: Dockerfile
+    volumes:
+      - ./icecast/config:/home/icecast/config
+      - ./icecast/log:/home/icecast/log
+      - ./icecast/docker-entrypoint.sh:/home/icecast/docker-entrypoint.sh
+    environment:
+      - ICECAST_LOCATION=${ICECAST_LOCATION}
+      - ICECAST_ADMIN_PASSWORD=${ICECAST_ADMIN_PASSWORD}
+      - ICECAST_HOSTNAME=${ICECAST_HOSTNAME}
+      - ICECAST_RELAY_SERVER=${ICECAST_RELAY_SERVER}
+    depends_on:
+      - api
+    ports:
+      - 8004:8004
+    networks:
+      - internal
+
+  createbuckets:
+    image: minio/mc
+    depends_on:
+      - storage
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://storage:9001 ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY};
+      if ! /usr/bin/mc ls myminio | grep -q 'killme'; then
+        echo 'Creating bucket killme...';
+        /usr/bin/mc mb myminio/killme;
+        /usr/bin/mc anonymous set public myminio/killme;
+      else
+        echo 'Bucket killme already exists, skipping creation.';
+      fi;
+      exit 0;
+      "
+    networks:
+      - internal
+
+volumes:
+  postgres_data:
+
+networks:
+  internal:
+    driver: bridge
+  traefik:
+    driver: bridge

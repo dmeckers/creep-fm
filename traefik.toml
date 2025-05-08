@@ -1,0 +1,43 @@
+################################################################
+# Global configuration
+################################################################
+
+# Enable debug mode
+#
+# Optional
+# Default: false
+#
+debug = false
+
+# Log level
+#
+# Optional
+# Default: "ERROR"
+#
+# logLevel = "DEBUG"
+
+defaultEntryPoints = ["http", "https"]
+
+[entryPoints]
+  [entryPoints.http]
+  address = ":80"
+    [entryPoints.http.redirect]
+    entryPoint = "https"
+
+  [entryPoints.https]
+  address = ":443"
+    [entryPoints.https.tls]
+      [[entryPoints.https.tls.certificates]]
+      certFile = "/etc/certs/local-cert.pem"
+      keyFile = "/etc/certs/local-key.pem"
+
+[api]
+
+[ping]
+
+[tls.stores]
+  [tls.stores.default]
+
+[docker]
+network = "traefik"
+exposedByDefault = false
