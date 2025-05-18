@@ -1,0 +1,9 @@
+[submodule "api"]
+    path = api
+    url = https://github.com/dmeckers/creep-api.git
+[submodule "front"]
+    path = front
+    url = https://github.com/dmeckers/creep-front.git
+[submodule "tg"]
+    path = tg
+    url = https://github.com/dmeckers/creep-tg.git

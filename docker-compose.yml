@@ -28,12 +28,10 @@ services:
       - traefik
     labels:
       - "traefik.enable=true"
-      - traefik.frontend.rule=Host:dev.creep-station.com
       - "traefik.http.routers.nginx-front.rule=Host(`dev.creep-station.com`)"
-      - "traefik.http.routers.nginx-front.entrypoints=https"
-      - "traefik.http.routers.nginx-front.tls=true"
+      - "traefik.http.routers.nginx-front.entrypoints=websecure"
+      - "traefik.http.routers.nginx-front.tls.certresolver=myresolver"
       - "traefik.http.services.nginx-front.loadbalancer.server.port=80"
-      - "traefik.docker.network=traefik"
 
   nginx-api:
     image: nginx:latest
@@ -79,12 +77,45 @@ services:
     container_name: api
     ports:
       - "8000:8000"
+      - "5174:5174"
     expose:
       - "8000"
+      - "5174"
     volumes:
       - ./api:/var/www/html
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./liq/configs:/var/liq/example # for liq config
+
+  api-taskserver:
+    build:
+      context: ./api
+      dockerfile: ./docker/Dockerfile
+    container_name: api-taskserver
+    hostname: api-taskserver
+    ports:
+      - "8001:8000"
+    expose:
+      - "8000"
+      - "5174"
+    volumes:
+      - ./api:/var/www/html
+    entrypoint: >
+      /bin/sh -c "php artisan queue:work"
+
+  api-scout-runner:
+    build:
+      context: ./api
+      dockerfile: ./docker/Dockerfile
+    container_name: api-scout-runner
+    hostname: api-scout-runner
+    ports:
+      - "8002:8000"
+    expose:
+      - "8000"
+      - "5174"
+    volumes:
+      - ./api:/var/www/html
+    entrypoint: >
+      /bin/sh -c "php artisan queue:work --queue=scout"
+
     networks:
       - internal
     depends_on:
@@ -96,6 +127,9 @@ services:
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
+      - SCOUT_DRIVER=${SCOUT_DRIVER}
+      - MEILISEARCH_HOST=${MEILISEARCH_HOST}
+      - MEILISEARCH_KEY=${MEILISEARCH_KEY}
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - SANCTUM_STATEFUL_DOMAINS=${SANCTUM_STATEFUL_DOMAINS}
@@ -105,7 +139,6 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
-      - QUEUE_CONNECTION=${QUEUE_CONNECTION}
       - AWS_BUCKET=${AWS_BUCKET}
       - AWS_ENDPOINT=${AWS_ENDPOINT}
       - AWS_URL=${AWS_URL}
@@ -114,6 +147,7 @@ services:
       - FILESYSTEM_DISK=${FILESYSTEM_DISK}
       - SERVER_NAME=${SERVER_NAME}
       - OCTANE_SERVER=${OCTANE_SERVER}
+      - BROADCAST_DRIVER=${BROADCAST_DRIVER}
 
   # api-frankenphp:
   #   build:
@@ -192,11 +226,21 @@ services:
   redis:
     image: redis:alpine
     container_name: redis
+    hostname: redis
     ports:
       - 6379:6379
     networks:
       - internal
     user: redis
+
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: meilisearch
+    hostname: meilisearch
+    ports:
+      - 7700:7700
+    networks:
+      - internal
 
   tg-bot:
     container_name: tg-bot
@@ -205,33 +249,14 @@ services:
       - 3005:3000
     volumes:
       - ./tg:/app
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - WEB_APP_URL=${WEB_APP_URL}
     # depends_on:
     #   - api
     build:
       context: ./tg
       dockerfile: ./docker/Dockerfile-dev
-    networks:
-      - internal
-
-  icecast:
-    container_name: icecast
-    hostname: icecast
-    build:
-      context: ./icecast
-      dockerfile: Dockerfile
-    volumes:
-      - ./icecast/config:/home/icecast/config
-      - ./icecast/log:/home/icecast/log
-      - ./icecast/docker-entrypoint.sh:/home/icecast/docker-entrypoint.sh
-    environment:
-      - ICECAST_LOCATION=${ICECAST_LOCATION}
-      - ICECAST_ADMIN_PASSWORD=${ICECAST_ADMIN_PASSWORD}
-      - ICECAST_HOSTNAME=${ICECAST_HOSTNAME}
-      - ICECAST_RELAY_SERVER=${ICECAST_RELAY_SERVER}
-    depends_on:
-      - api
-    ports:
-      - 8004:8004
     networks:
       - internal
 
