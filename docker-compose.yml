@@ -75,6 +75,10 @@ services:
       context: ./api
       dockerfile: ./docker/Dockerfile
     container_name: api
+    hostname: api
+    networks:
+      - internal
+      - traefik
     ports:
       - "8000:8000"
       - "5174:5174"
@@ -95,10 +99,41 @@ services:
     expose:
       - "8000"
       - "5174"
+    networks:
+      - internal
     volumes:
       - ./api:/var/www/html
-    entrypoint: >
-      /bin/sh -c "php artisan queue:work"
+    entrypoint: /bin/sh -c "php artisan queue:work"
+    depends_on:
+      - postgres-db
+      - redis
+      - storage
+    environment:
+      - DB_CONNECTION=${DB_CONNECTION}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - SCOUT_DRIVER=${SCOUT_DRIVER}
+      - MEILISEARCH_HOST=${MEILISEARCH_HOST}
+      - MEILISEARCH_KEY=${MEILISEARCH_KEY}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SANCTUM_STATEFUL_DOMAINS=${SANCTUM_STATEFUL_DOMAINS}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_CLIENT=${REDIS_CLIENT}
+      - REDIS_HOST=${REDIS_HOST}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - AWS_BUCKET=${AWS_BUCKET}
+      - AWS_ENDPOINT=${AWS_ENDPOINT}
+      - AWS_URL=${AWS_URL}
+      - AWS_USE_PATH_STYLE_ENDPOINT=${AWS_USE_PATH_STYLE_ENDPOINT}
+      - FILESYSTEM_PUBLIC_DRIVER=${FILESYSTEM_PUBLIC_DRIVER}
+      - FILESYSTEM_DISK=${FILESYSTEM_DISK}
+      - SERVER_NAME=${SERVER_NAME}
+      - OCTANE_SERVER=${OCTANE_SERVER}
+      - BROADCAST_DRIVER=${BROADCAST_DRIVER}
 
   api-scout-runner:
     build:
@@ -113,9 +148,7 @@ services:
       - "5174"
     volumes:
       - ./api:/var/www/html
-    entrypoint: >
-      /bin/sh -c "php artisan queue:work --queue=scout"
-
+    entrypoint: /bin/sh -c "php artisan queue:work --queue=scout"
     networks:
       - internal
     depends_on:
