@@ -1,9 +1,12 @@
 [submodule "api"]
     path = api
     url = https://github.com/dmeckers/creep-api.git
+    branch = ntp-ws
 [submodule "front"]
     path = front
     url = https://github.com/dmeckers/creep-front.git
+    branch = ntp-ws
 [submodule "tg"]
     path = tg
     url = https://github.com/dmeckers/creep-tg.git
+    branch = master
