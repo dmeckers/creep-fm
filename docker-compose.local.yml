@@ -15,14 +15,14 @@ services:
       - traefik
 
   nginx-front:
-    build:
-      context: ./front
-      dockerfile: ./Dockerfile-nginx
+    image: nginx:latest
     container_name: nginx-front
     expose:
       - "80"
     volumes:
       - ./front/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - front
     networks:
       - internal
       - traefik
@@ -52,6 +52,44 @@ services:
       - "traefik.http.routers.api.tls.certresolver=myresolver"
       - "traefik.http.services.api.loadbalancer.server.port=80"
       - "traefik.docker.network=traefik"
+
+  front:
+    build:
+      context: ./front
+    container_name: front
+    ports:
+      - "5173:5173"
+    expose:
+      - "5173"
+    volumes:
+      - ./front:/app
+    networks:
+      - internal
+    depends_on:
+      - api
+    env_file:
+      - .env
+    command: npm run dev
+
+  # api:
+  #   build:
+  #     context: ./api
+  #     dockerfile: ./docker/Dockerfile
+  #   container_name: api
+  #   hostname: api
+  #   networks:
+  #     - internal
+  #     - traefik
+  #   env_file:
+  #     - .env
+  #   ports:
+  #     - "8000:8000"
+  #     - "5174:5174"
+  #   expose:
+  #     - "8000"
+  #     - "5174"
+  #   volumes:
+  #     - ./api:/var/www/html
 
   api-taskserver:
     build:
