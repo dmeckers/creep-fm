@@ -1,57 +1,40 @@
 services:
-  traefik:
-    image: traefik:alpine
-    container_name: traefik
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    hostname: nginx
     ports:
       - "80:80"
       - "443:443"
-      - "8088:8080"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - $PWD/traefik.toml:/etc/traefik/traefik.toml:ro
-      - $PWD/certs:/etc/certs:ro
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+      - ./front/dist:/var/www/html
+      # FROM HOST
+      - /etc/letsencrypt/live/cream-fm.art:/etc/letsencrypt/live/cream-fm.art
     networks:
       - internal
-      - traefik
-
-  nginx-front:
-    build:
-      context: ./front
-      dockerfile: ./Dockerfile-nginx
-    container_name: nginx-front
-    expose:
-      - "80"
-    volumes:
-      - ./front/nginx.conf:/etc/nginx/nginx.conf
-    networks:
-      - internal
-      - traefik
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.nginx-front.rule=Host(`cream-fm.art`)"
-      - "traefik.http.routers.nginx-front.entrypoints=websecure"
-      - "traefik.http.routers.nginx-front.tls.certresolver=myresolver"
-      - "traefik.http.services.nginx-front.loadbalancer.server.port=80"
-
-  nginx-api:
-    image: nginx:latest
-    container_name: nginx-api
-    expose:
-      - "80"
-    volumes:
-      - ./api/nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - api
-    networks:
-      - internal
-      - traefik
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`api.cream-fm.art`)"
-      - "traefik.http.routers.api.entrypoints=websecure"
-      - "traefik.http.routers.api.tls.certresolver=myresolver"
-      - "traefik.http.services.api.loadbalancer.server.port=80"
-      - "traefik.docker.network=traefik"
+    command: '/bin/sh -c ''while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g "daemon off;"'''
+    # command: 'tail -f /dev/null' # Keep the container running
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+  # frontend-builder:
+  #   build:
+  #     context: ./front
+  #     dockerfile: ./Dockerfile-build
+  #   volumes:
+  #     - ./front:/app
+  #     - ./front/dist:/app/dist
 
   api-taskserver:
     build:
@@ -101,6 +84,7 @@ services:
       - SERVER_NAME=${SERVER_NAME}
       - OCTANE_SERVER=${OCTANE_SERVER}
       - BROADCAST_DRIVER=${BROADCAST_DRIVER}
+      - APP_ENV=${APP_ENV}
 
   api-scout-runner:
     build:
@@ -125,6 +109,7 @@ services:
     env_file:
       - .env
     environment:
+      - APP_ENV=${APP_ENV}
       - DB_CONNECTION=${DB_CONNECTION}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
@@ -156,6 +141,7 @@ services:
       context: ./api
       dockerfile: ./docker/Dockerfile
     container_name: api
+    hostname: api
     ports:
       - "8000:8000"
     expose:
@@ -195,6 +181,7 @@ services:
       - FILESYSTEM_DISK=${FILESYSTEM_DISK}
       - SERVER_NAME=${SERVER_NAME}
       - OCTANE_SERVER=${OCTANE_SERVER}
+      - APP_ENV=${APP_ENV}
 
   postgres-db:
     container_name: postgres-db
@@ -290,7 +277,7 @@ volumes:
   postgres_data:
 
 networks:
+  # traefik-proxy:
+  #   name: traefik-proxy
   internal:
-    driver: bridge
-  traefik:
-    driver: bridge
+    name: internal
