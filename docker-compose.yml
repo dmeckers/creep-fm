@@ -18,7 +18,7 @@ services:
     depends_on:
       - api
     command: '/bin/sh -c ''while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g "daemon off;"'''
-    # command: 'tail -f /dev/null' # Keep the container running
+    # command: "tail -f /dev/null" # Keep the container running
 
   certbot:
     image: certbot/certbot
@@ -27,14 +27,15 @@ services:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    # entrypoint: "tail -f /dev/null" # Keep the container running
 
-  # frontend-builder:
-  #   build:
-  #     context: ./front
-  #     dockerfile: ./Dockerfile-build
-  #   volumes:
-  #     - ./front:/app
-  #     - ./front/dist:/app/dist
+  frontend-builder:
+    build:
+      context: ./front
+      dockerfile: ./Dockerfile-build
+    volumes:
+      - ./front:/app
+      - ./front/dist:/app/dist
 
   api-taskserver:
     build:
