@@ -11,6 +11,7 @@ services:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
       - ./front/dist:/var/www/html
+      - ./api:/var/www
       # FROM HOST
       - /etc/letsencrypt/live/cream-fm.art:/etc/letsencrypt/live/cream-fm.art
     networks:
