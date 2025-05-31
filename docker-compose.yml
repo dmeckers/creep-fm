@@ -51,7 +51,7 @@ services:
     networks:
       - internal
     volumes:
-      - ./api:/var/www/html
+      - ./api:/var/www
     entrypoint: /bin/sh -c "php artisan queue:work"
     depends_on:
       - postgres-db
@@ -99,7 +99,7 @@ services:
       - "8000"
       - "5174"
     volumes:
-      - ./api:/var/www/html
+      - ./api:/var/www
     entrypoint: /bin/sh -c "php artisan queue:work --queue=scout"
     networks:
       - internal
@@ -148,7 +148,7 @@ services:
     expose:
       - "8000"
     volumes:
-      - ./api:/var/www/html
+      - ./api:/var/www
       - /var/run/docker.sock:/var/run/docker.sock
       - ./liq/configs:/var/liq/example # for liq config
     networks:
