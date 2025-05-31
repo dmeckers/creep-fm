@@ -40,7 +40,7 @@ services:
   api-taskserver:
     build:
       context: ./api
-      dockerfile: ./docker/Dockerfile
+      dockerfile: ./docker/Dockerfile.prod
     container_name: api-taskserver
     hostname: api-taskserver
     ports:
@@ -90,7 +90,7 @@ services:
   api-scout-runner:
     build:
       context: ./api
-      dockerfile: ./docker/Dockerfile
+      dockerfile: ./docker/Dockerfile.prod
     container_name: api-scout-runner
     hostname: api-scout-runner
     ports:
@@ -140,7 +140,7 @@ services:
   api:
     build:
       context: ./api
-      dockerfile: ./docker/Dockerfile
+      dockerfile: ./docker/Dockerfile.prod
     container_name: api
     hostname: api
     ports:
