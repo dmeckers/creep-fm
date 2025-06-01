@@ -141,7 +141,7 @@ services:
   api:
     build:
       context: ./api
-      dockerfile: ./docker/Dockerfile.prod
+      dockerfile: ./docker/Dockerfile-frankenphp
     container_name: api
     hostname: api
     ports:
@@ -150,8 +150,8 @@ services:
       - "8000"
     volumes:
       - ./api:/var/www
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./liq/configs:/var/liq/example # for liq config
+    entrypoint: /bin/sh -c "php artisan octane:start --host=0.0.0.0 --port=8000"
+    # entrypoint: tail -f /dev/null # Keep the container running
     networks:
       - internal
     depends_on:
