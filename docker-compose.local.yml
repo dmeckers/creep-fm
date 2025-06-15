@@ -111,6 +111,23 @@ services:
     ports:
       - "5432:5432"
 
+  tg-bot:
+    container_name: tg-bot
+    hostname: tg-bot
+    ports:
+      - 3005:3000
+    volumes:
+      - ./tg:/app
+    env_file:
+      - .env.local
+    depends_on:
+      - api
+    build:
+      context: ./tg
+      dockerfile: ./docker/Dockerfile-dev
+    networks:
+      - internal
+
   storage:
     image: minio/minio
     container_name: storage
@@ -165,6 +182,7 @@ services:
 
 volumes:
   postgres_data:
+  telegram-bot-api-data:
 
 networks:
   internal:

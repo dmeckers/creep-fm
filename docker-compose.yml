@@ -245,10 +245,14 @@ services:
     volumes:
       - ./tg:/app
     environment:
-      - BOT_TOKEN=${BOT_TOKEN}
-      - WEB_APP_URL=${WEB_APP_URL}
       - API_URL=${API_URL}
-    # depends_on:
+
+      - API_ID=${TG_CREEP_APP_API_ID}
+      - API_HASH=${TG_CREEP_APP_API_HASH}
+      - BOT_TOKEN=${BOT_TOKEN}
+
+      - WEB_APP_URL=${WEB_APP_URL}
+          # depends_on:
     #   - api
     build:
       context: ./tg
